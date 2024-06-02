@@ -1,21 +1,25 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>Analysis Results</title>
+    <meta charset="UTF-8">
+    <title>Analyze Data</title>
 </head>
 <body>
-    <h1>Analysis Results</h1>
-    <h2>Statistics</h2>
-    <ul>
-        <li>Average Daily Revenue: {{ average_revenue }}</li>
-        <li>Median Daily Revenue: {{ median_revenue }}</li>
-        <li>Total Number of Transactions: {{ transaction_count }}</li>
-    </ul>
-    <h2>Graphs</h2>
-    <h3>Cumulative Amount Over Time</h3>
-    <img src="{{ cumulative_graph }}" alt="Cumulative Amount Over Time">
-    <h3>Daily Revenue Over Time</h3>
-    <img src="{{ daily_revenue_graph }}" alt="Daily Revenue Over Time">
+    <h1>Data Analysis</h1>
+    <form method="post" action="{{ url_for('analyze_file') }}">
+        <button type="submit">Generate Graphs and Calculate Statistics</button>
+    </form>
+    {% if cumulative_graph %}
+        <h2>Cumulative Amount Over Time</h2>
+        <img src="{{ cumulative_graph }}" alt="Cumulative Amount Graph">
+    {% endif %}
+    {% if daily_revenue_graph %}
+        <h2>Daily Revenue Over Time</h2>
+        <img src="{{ daily_revenue_graph }}" alt="Daily Revenue Graph">
+    {% endif %}
+    <h3>Statistics</h3>
+    <p>Average Revenue: {{ average_revenue }}</p>
+    <p>Median Revenue: {{ median_revenue }}</p>
+    <p>Transaction Count: {{ transaction_count }}</p>
 </body>
 </html>

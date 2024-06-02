@@ -33,11 +33,18 @@ def upload_file():
             ensure_upload_folder()
             filename = os.path.join(app.config['UPLOAD_FOLDER'], 'uploaded_file.csv')
             file.save(filename)
-            return redirect(url_for('analyze_file'))
+            return redirect(url_for('analysis'))
     return render_template('index.html')
 
 
-@app.route('/analyze')
+@app.route('/analysis', methods=['GET', 'POST'])
+def analysis():
+    if request.method == 'POST':
+        return redirect(url_for('analyze_file'))
+    return render_template('analysis.html')
+
+
+@app.route('/analyze', methods=['POST'])
 def analyze_file():
     ensure_upload_folder()
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], 'uploaded_file.csv')
@@ -49,31 +56,47 @@ def analyze_file():
 
     print(f"Chargement du fichier: {file_path}")
     try:
-        data = pd.read_csv(file_path)
+        # Lire le fichier avec le délimiteur correct
+        data_initial = pd.read_csv(file_path, delimiter=',', quotechar='"')
         print("Fichier chargé avec succès.")
+        print("Colonnes disponibles:", data_initial.columns.tolist())
     except Exception as e:
         print(f"Erreur lors du chargement du fichier: {e}")
         return "Error loading file", 500
 
     try:
-        data['settledAt'] = pd.to_datetime(data['settledAt'])
-        print("Conversion de la colonne 'settledAt' en datetime réussie.")
+        # Définir les noms des colonnes si elles ne sont pas correctement lues
+        if len(data_initial.columns) == 1:
+            data_initial = pd.read_csv(file_path, delimiter=',', quotechar='"', names=[
+                "txHash", "providerId", "hermesId", "channelAddress",
+                "externalWalletAddress", "amount", "settledAt", "fees",
+                "isWithdrawal", "blockExplorerUrl", "error"
+            ], header=0)
+
+        # Convertir la colonne 'settledAt' en datetime et extraire uniquement la date
+        data_initial['settledAt'] = pd.to_datetime(data_initial['settledAt']).dt.date
+
+        # Convertir 'amount' et 'fees' en numérique et conserver uniquement les 4 premières unités
+        data_initial['amount'] = pd.to_numeric(data_initial['amount'], errors='coerce').astype(str).str[:4].astype(
+            float)
+        data_initial['fees'] = pd.to_numeric(data_initial['fees'], errors='coerce').astype(str).str[:4].astype(float)
+
+        # Sélectionner les colonnes pertinentes
+        data_transformed = data_initial[['settledAt', 'amount', 'fees']]
+
+        print("Nettoyage des données réussi.")
     except Exception as e:
-        print(f"Erreur lors de la conversion de 'settledAt' en datetime: {e}")
-        return "Error processing dates", 500
+        print(f"Erreur lors du nettoyage des données: {e}")
+        return "Error processing data", 500
 
-    # Afficher les premières lignes des données pour débogage
-    print("Premières lignes des données:")
-    print(data.head())
-
-    # Sauvegarder les données transformées dans un nouveau fichier CSV
+    # Sauvegarder les données nettoyées dans un nouveau fichier CSV
     transformed_file_path = os.path.join(app.config['UPLOAD_FOLDER'], 'settlement_transformed.csv')
     try:
-        data[['settledAt', 'amount']].to_csv(transformed_file_path, index=False)
-        print(f"Données transformées sauvegardées à {transformed_file_path}")
+        data_transformed.to_csv(transformed_file_path, index=False)
+        print(f"Données nettoyées sauvegardées à {transformed_file_path}")
     except Exception as e:
-        print(f"Erreur lors de la sauvegarde des données transformées: {e}")
-        return "Error saving transformed data", 500
+        print(f"Erreur lors de la sauvegarde des données nettoyées: {e}")
+        return "Error saving cleaned data", 500
 
     # Appeler la fonction generate_graphs pour créer les graphiques
     try:
@@ -85,9 +108,11 @@ def analyze_file():
     return render_template('analysis.html',
                            cumulative_graph=url_for('static', filename='uploads/cumulative_amount_over_time.png'),
                            daily_revenue_graph=url_for('static', filename='uploads/daily_revenue_over_time.png'),
-                           average_revenue=data['amount'].mean(),
-                           median_revenue=data['amount'].median(),
-                           transaction_count=len(data))
+                           average_revenue=data_transformed[
+                               'amount'].mean() if 'amount' in data_transformed.columns else None,
+                           median_revenue=data_transformed[
+                               'amount'].median() if 'amount' in data_transformed.columns else None,
+                           transaction_count=len(data_transformed))
 
 
 if __name__ == '__main__':

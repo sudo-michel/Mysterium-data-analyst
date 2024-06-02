@@ -1,21 +1,14 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>Analysis Results</title>
+    <meta charset="UTF-8">
+    <title>Upload CSV</title>
 </head>
 <body>
-    <h1>Analysis Results</h1>
-    <h2>Statistics</h2>
-    <ul>
-        <li>Average Daily Revenue: {{ average_revenue }}</li>
-        <li>Median Daily Revenue: {{ median_revenue }}</li>
-        <li>Total Number of Transactions: {{ transaction_count }}</li>
-    </ul>
-    <h2>Graphs</h2>
-    <h3>Cumulative Amount Over Time</h3>
-    <img src="{{ url_for('static', filename='uploads/cumulative_amount_over_time.png') }}" alt="Cumulative Amount Over Time">
-    <h3>Daily Revenue Over Time</h3>
-    <img src="{{ url_for('static', filename='uploads/daily_revenue_over_time.png') }}" alt="Daily Revenue Over Time">
+    <h1>Upload your CSV file</h1>
+    <form method="post" enctype="multipart/form-data">
+        <input type="file" name="file">
+        <input type="submit" value="Upload">
+    </form>
 </body>
 </html>
