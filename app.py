@@ -1,18 +1,25 @@
 import os
 from flask import Flask, request, redirect, url_for, render_template
 import pandas as pd
-import matplotlib.pyplot as plt
+from graphe import generate_graphs  # Importer la fonction generate_graphs
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'uploads')
+app.config['UPLOAD_FOLDER'] = os.path.abspath(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'uploads'))
 app.config['ALLOWED_EXTENSIONS'] = {'csv'}
+
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
+
 def ensure_upload_folder():
     if not os.path.exists(app.config['UPLOAD_FOLDER']):
         os.makedirs(app.config['UPLOAD_FOLDER'])
+        print(f"Dossier créé: {app.config['UPLOAD_FOLDER']}")
+    else:
+        print(f"Dossier existant: {app.config['UPLOAD_FOLDER']}")
+
 
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
@@ -29,64 +36,59 @@ def upload_file():
             return redirect(url_for('analyze_file'))
     return render_template('index.html')
 
+
 @app.route('/analyze')
 def analyze_file():
     ensure_upload_folder()
-    # Load the uploaded CSV file
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], 'uploaded_file.csv')
-    data = pd.read_csv(file_path)
 
-    # Convert the 'settledAt' column to datetime
-    data['settledAt'] = pd.to_datetime(data['settledAt'])
+    # Vérifier si le fichier existe
+    if not os.path.exists(file_path):
+        print(f"Le fichier {file_path} n'existe pas.")
+        return "File not found", 404
 
-    # Calculate cumulative amount
-    data['cumulative_amount'] = data['amount'].cumsum()
+    print(f"Chargement du fichier: {file_path}")
+    try:
+        data = pd.read_csv(file_path)
+        print("Fichier chargé avec succès.")
+    except Exception as e:
+        print(f"Erreur lors du chargement du fichier: {e}")
+        return "Error loading file", 500
 
-    # Generate cumulative amount graph
-    plt.figure(figsize=(10, 6))
-    plt.plot(data['settledAt'], data['cumulative_amount'], marker='o', linestyle='-', label='Cumulative Amount')
-    plt.xlabel('Date')
-    plt.ylabel('Cumulative Amount')
-    plt.title('Cumulative Amount Over Time')
-    plt.legend()
-    plt.grid(True)
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    cumulative_graph_path = os.path.join(app.config['UPLOAD_FOLDER'], 'cumulative_amount_over_time.png')
-    plt.savefig(cumulative_graph_path)
-    print(f"Cumulative graph saved at {cumulative_graph_path}")
-    plt.close()
+    try:
+        data['settledAt'] = pd.to_datetime(data['settledAt'])
+        print("Conversion de la colonne 'settledAt' en datetime réussie.")
+    except Exception as e:
+        print(f"Erreur lors de la conversion de 'settledAt' en datetime: {e}")
+        return "Error processing dates", 500
 
-    # Calculate daily revenue
-    daily_revenue = data.groupby(data['settledAt'].dt.date)['amount'].sum().reset_index()
-    daily_revenue.columns = ['Date', 'Daily Revenue']
+    # Afficher les premières lignes des données pour débogage
+    print("Premières lignes des données:")
+    print(data.head())
 
-    # Generate daily revenue graph
-    plt.figure(figsize=(10, 6))
-    plt.plot(daily_revenue['Date'], daily_revenue['Daily Revenue'], marker='o', linestyle='-', label='Daily Revenue')
-    plt.xlabel('Date')
-    plt.ylabel('Daily Revenue')
-    plt.title('Daily Revenue Over Time')
-    plt.legend()
-    plt.grid(True)
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    daily_revenue_graph_path = os.path.join(app.config['UPLOAD_FOLDER'], 'daily_revenue_over_time.png')
-    plt.savefig(daily_revenue_graph_path)
-    print(f"Daily revenue graph saved at {daily_revenue_graph_path}")
-    plt.close()
+    # Sauvegarder les données transformées dans un nouveau fichier CSV
+    transformed_file_path = os.path.join(app.config['UPLOAD_FOLDER'], 'settlement_transformed.csv')
+    try:
+        data[['settledAt', 'amount']].to_csv(transformed_file_path, index=False)
+        print(f"Données transformées sauvegardées à {transformed_file_path}")
+    except Exception as e:
+        print(f"Erreur lors de la sauvegarde des données transformées: {e}")
+        return "Error saving transformed data", 500
 
-    # Calculate statistics
-    average_revenue = daily_revenue['Daily Revenue'].mean()
-    median_revenue = daily_revenue['Daily Revenue'].median()
-    transaction_count = len(data)
+    # Appeler la fonction generate_graphs pour créer les graphiques
+    try:
+        generate_graphs(transformed_file_path)
+    except Exception as e:
+        print(f"Erreur lors de la génération des graphiques: {e}")
+        return "Error generating graphs", 500
 
     return render_template('analysis.html',
                            cumulative_graph=url_for('static', filename='uploads/cumulative_amount_over_time.png'),
                            daily_revenue_graph=url_for('static', filename='uploads/daily_revenue_over_time.png'),
-                           average_revenue=average_revenue,
-                           median_revenue=median_revenue,
-                           transaction_count=transaction_count)
+                           average_revenue=data['amount'].mean(),
+                           median_revenue=data['amount'].median(),
+                           transaction_count=len(data))
+
 
 if __name__ == '__main__':
     app.run(debug=True)
