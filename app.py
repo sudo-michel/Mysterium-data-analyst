@@ -78,8 +78,9 @@ def analyze_file():
 
         # Convertir 'amount' et 'fees' en numérique et conserver uniquement les 4 premières unités
         data_initial['amount'] = pd.to_numeric(data_initial['amount'], errors='coerce').astype(str).str[:4].astype(
-            float)
-        data_initial['fees'] = pd.to_numeric(data_initial['fees'], errors='coerce').astype(str).str[:4].astype(float)
+            float) / 1000
+        data_initial['fees'] = pd.to_numeric(data_initial['fees'], errors='coerce').astype(str).str[:4].astype(
+            float) / 1000
 
         # Sélectionner les colonnes pertinentes
         data_transformed = data_initial[['settledAt', 'amount', 'fees']]

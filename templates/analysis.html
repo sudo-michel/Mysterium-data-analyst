@@ -3,23 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <title>Analyze Data</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <h1>Data Analysis</h1>
-    <form method="post" action="{{ url_for('analyze_file') }}">
-        <button type="submit">Generate Graphs and Calculate Statistics</button>
-    </form>
-    {% if cumulative_graph %}
-        <h2>Cumulative Amount Over Time</h2>
-        <img src="{{ cumulative_graph }}" alt="Cumulative Amount Graph">
-    {% endif %}
-    {% if daily_revenue_graph %}
-        <h2>Daily Revenue Over Time</h2>
-        <img src="{{ daily_revenue_graph }}" alt="Daily Revenue Graph">
-    {% endif %}
-    <h3>Statistics</h3>
-    <p>Average Revenue: {{ average_revenue }}</p>
-    <p>Median Revenue: {{ median_revenue }}</p>
-    <p>Transaction Count: {{ transaction_count }}</p>
+    <header>
+        <div class="container">
+            <div id="branding">
+                <h1>CSV Analysis Tool</h1>
+            </div>
+        </div>
+    </header>
+    <div class="container">
+        <h2>Data Analysis</h2>
+        <form method="post" action="{{ url_for('analyze_file') }}">
+            <button type="submit">Generate Graphs and Calculate Statistics</button>
+        </form>
+        {% if cumulative_graph %}
+            <h2>Cumulative Amount Over Time</h2>
+            <img src="{{ cumulative_graph }}" alt="Cumulative Amount Graph">
+        {% endif %}
+        {% if daily_revenue_graph %}
+            <h2>Daily Revenue Over Time</h2>
+            <img src="{{ daily_revenue_graph }}" alt="Daily Revenue Graph">
+        {% endif %}
+        <h3>Statistics</h3>
+        <p><strong>Average Revenue:</strong> {{ average_revenue }}</p>
+        <p><strong>Median Revenue:</strong> {{ median_revenue }}</p>
+        <p><strong>Transaction Count:</strong> {{ transaction_count }}</p>
+    </div>
 </body>
 </html>

@@ -3,12 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <title>Upload CSV</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <h1>Upload your CSV file</h1>
-    <form method="post" enctype="multipart/form-data">
-        <input type="file" name="file">
-        <input type="submit" value="Upload">
-    </form>
+    <header>
+        <div class="container">
+            <div id="branding">
+                <h1>CSV Analysis Tool</h1>
+            </div>
+        </div>
+    </header>
+    <div class="container">
+        <h2>Upload your CSV file</h2>
+        <form method="post" enctype="multipart/form-data">
+            <input type="file" name="file">
+            <input type="submit" value="Upload">
+        </form>
+    </div>
 </body>
 </html>
